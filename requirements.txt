@@ -1,0 +1,16 @@
+pandas>=3.0.1
+numpy>=2.4.2
+scikit-learn>=1.8.0
+langdetect
+tqdm
+natasha
+transformers
+datasets
+pymorphy3
+pymorphy3-dicts-ru
+accelerate
+peft
+
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch>=2.10.0
+torchvision>=0.25.0
