@@ -14,6 +14,8 @@ from natasha import (
     Doc
 )
 from tqdm import tqdm
+import torch
+from torch.utils.data import DataLoader
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
@@ -79,3 +81,31 @@ def apply_preprocessing(splits):
 
         print(f"    Сохранение в lemmatized/{name}_lemmatized.csv...")
         df_lemmatized.to_csv(os.path.join(LEMMATIZED_DIR, f"{name}_lemmatized.csv"), index=False)
+
+
+def extract_sequence_embeddings(trainer, dataset, device, batch_size=16):
+    model = trainer.model
+    model.eval()
+
+    ds_for_loader = dataset.with_format("torch", columns=["input_ids", "attention_mask", "labels"])
+    loader = DataLoader(ds_for_loader, batch_size=batch_size, shuffle=False)
+
+    all_embeddings = []
+    all_labels = []
+
+    for batch in tqdm(loader, desc="Extracting embeddings", unit="batch"):
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["labels"].to(device)
+
+        with torch.no_grad(): 
+            outputs = model.bert(input_ids=input_ids, attention_mask=attention_mask)
+            hidden_states = outputs.last_hidden_state
+
+            all_embeddings.append(hidden_states.cpu())
+            all_labels.append(labels.cpu())
+
+    X = torch.cat(all_embeddings, dim=0)
+    y = torch.cat(all_labels, dim=0)
+
+    return X, y
