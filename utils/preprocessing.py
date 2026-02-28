@@ -16,6 +16,7 @@ from natasha import (
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
+from datasets import Dataset
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
@@ -25,6 +26,7 @@ segmenter = Segmenter()
 morph_vocab = MorphVocab()
 emb = NewsEmbedding()
 morph_tagger = NewsMorphTagger(emb)
+
 
 def preprocess_and_lemmatize(text):
     if not isinstance(text, str) or not text.strip():
@@ -51,7 +53,6 @@ def preprocess_and_lemmatize(text):
         if not hasattr(token, 'pos') or token.pos is None:
             continue
 
-        # Если часть речи — оценочная — пропускаем
         if token.pos in REMOVE_POS:
             continue
 
@@ -68,8 +69,6 @@ def preprocess_and_lemmatize(text):
 
 
 def apply_preprocessing(splits):
-    print("Запуск лемматизации и очистки...\n")
-
     tqdm.pandas()
     for name, df in splits.items():
         print(f"Обработка сплита: {name}")
@@ -81,6 +80,38 @@ def apply_preprocessing(splits):
 
         print(f"    Сохранение в lemmatized/{name}_lemmatized.csv...")
         df_lemmatized.to_csv(os.path.join(LEMMATIZED_DIR, f"{name}_lemmatized.csv"), index=False)
+
+
+def prepare_dataset(df, text_col='text_lemmatized', label_col='label'):
+    df[text_col] = df[text_col].astype(str)
+
+    mask = (df[text_col] != 'nan') & (df[text_col].str.strip() != '')
+    df = df[mask].copy()
+
+    dataset = Dataset.from_pandas(df[[text_col, label_col]])
+    dataset = dataset.rename_column(text_col, "text")
+    dataset = dataset.rename_column(label_col, "labels")
+    return dataset
+
+
+def tokenize_function(examples, tokenizer):
+    texts = examples["text"]
+    
+    cleaned_texts = []
+    for t in texts:
+        if t is None or (isinstance(t, float) and t != t):
+            cleaned_texts.append("")
+        elif not isinstance(t, str):
+            cleaned_texts.append(str(t))
+        else:
+            cleaned_texts.append(t)
+    
+    return tokenizer(
+        cleaned_texts, 
+        truncation=True, 
+        padding="max_length", 
+        max_length=128
+    )
 
 
 def extract_sequence_embeddings(trainer, dataset, device, batch_size=16):

@@ -7,8 +7,7 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(logits, axis=-1)
     return {
         "accuracy": accuracy_score(labels, predictions),
-        "f1_macro": f1_score(labels, predictions, average='macro'),
-        "f1_weighted": f1_score(labels, predictions, average='weighted')
+        "f1_macro": f1_score(labels, predictions, average='macro')
     }
 
 
@@ -23,12 +22,10 @@ def evaluate_trainer(trainer, test_dataset, model_name_str):
     print(f"\nРезультаты модели: {model_name_str}")
     print(f"   Accuracy:     {results['eval_accuracy']:.4f}")
     print(f"   F1 Macro:     {results['eval_f1_macro']:.4f}")
-    print(f"   F1 Weighted:  {results['eval_f1_weighted']:.4f}")
 
     return {
         "name": model_name_str,
         "accuracy": results['eval_accuracy'],
         "f1_macro": results['eval_f1_macro'],
-        "f1_weighted": results['eval_f1_weighted'],
         "report": report
     }

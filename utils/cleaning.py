@@ -18,9 +18,6 @@ def is_russian(text):
 
 def apply_cleaning(splits):
     cleaned_data = {}
-
-    print("Запуск очистки данных от иностранных отзывов...\n")
-
     for name, df in splits.items():
         print(f"Обработка сплита: {name}")
         original_count = len(df)
