@@ -10,6 +10,7 @@ pymorphy3
 pymorphy3-dicts-ru
 accelerate
 peft
+bitsandbytes
 
 --extra-index-url https://download.pytorch.org/whl/cu130
 torch>=2.10.0
