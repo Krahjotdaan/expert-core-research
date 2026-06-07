@@ -11,13 +11,17 @@ def compute_metrics(eval_pred):
     }
 
 
-def evaluate_trainer(trainer, test_dataset, model_name_str):
+def evaluate_trainer(trainer, test_dataset, model_name_str, make_report=False):
     results = trainer.evaluate(test_dataset)
     predictions_output = trainer.predict(test_dataset)
     preds = np.argmax(predictions_output.predictions, axis=-1)
     labels_true = predictions_output.label_ids
 
-    report = classification_report(labels_true, preds, target_names=['Negative', 'Neutral', 'Positive'], output_dict=True)
+    report = classification_report(labels_true, 
+                                    preds, 
+                                    target_names=['Negative', 'Neutral', 'Positive'], 
+                                    output_dict=True
+                                   ) if make_report else None
 
     print(f"\nРезультаты модели: {model_name_str}")
     print(f"   Accuracy:     {results['eval_accuracy']:.4f}")
