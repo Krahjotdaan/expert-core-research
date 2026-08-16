@@ -37,18 +37,28 @@ def preprocess_and_lemmatize(text):
     doc.tag_morph(morph_tagger)
 
     # Список частей речи, которые нужно удалить
+    # NB: natasha (NewsMorphTagger) помечает пунктуацию как 'PUNCT', а не 'PNCT',
+    # поэтому оба тега включены, чтобы знаки препинания гарантированно удалялись.
     REMOVE_POS = {
         'PREP',   # Предлоги
         'CONJ',   # Союзы
         'PRCL',   # Частицы
         'INTJ',   # Междометия
-        'PNCT',   # Знаки препинания
+        'PUNCT',  # Знаки препинания (natasha/UD tagset)
+        'PNCT',   # Знаки препинания (альтернативное обозначение)
         'PRON',   # Местоимения
     }
+
+    # Также отбрасываем любые одиночные символы-пунктуацию как дополнительную защиту
+    import string
+    _PUNCT_CHARS = set(string.punctuation)
+    _PUNCT_CHARS.update('«»„“”…—–')
 
     filtered_words = []
 
     for token in doc.tokens:
+        raw = getattr(token, 'text', '') or ''
+
         # Пропускаем, если токен не имеет морфологической информации
         if not hasattr(token, 'pos') or token.pos is None:
             continue
@@ -56,10 +66,15 @@ def preprocess_and_lemmatize(text):
         if token.pos in REMOVE_POS:
             continue
 
+        # Дополнительная защита: отбрасываем чисто пунктуационные токены
+        # (если они не были размечены как PUNCT/PNCT)
+        if raw and all(ch in _PUNCT_CHARS or ch.isspace() for ch in raw):
+            continue
+
         # Сохраняем лемму (нормальную форму)
         try:
             token.lemmatize(morph_vocab)
-            lemma = getattr(token, 'lemma', token.text.lower())
+            lemma = getattr(token, 'lemma', raw.lower())
             if lemma and lemma.strip():
                 filtered_words.append(lemma)
         except:
